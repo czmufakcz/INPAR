@@ -2,6 +2,7 @@
 #include <omp.h>
 #include "SDL.h"
 #include <list>
+#include <vector>
 
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
@@ -31,59 +32,69 @@ struct Line
 	{
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderDrawLine(renderer, pointX, pointY, getX2(), getY2());
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Resetting the color
+		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	}
 };
 
-std::list<Line*> lines;
+std::vector<Line*> lines;
 
-void kochFractal(std::list<Line*> & lines)
+void kochFractal(std::vector<Line*> & lines)
 {
-	std::list<Line*> newLines;
-	std::list<Line*> delLines;
+	std::vector<Line*> newLines;
 
-	for (auto itr = lines.begin(); itr != lines.end(); itr++)
-	{
-		double x_l1 = (*itr)->pointX;
-		double y_l1 = (*itr)->pointY;
-		double len_l1 = (*itr)->length / 3;
-		double ang_l1 = (*itr)->angle;
+	int size = lines.size();
 
-		double x_l2 = (*itr)->pointX + (cos((*itr)->angle*(M_PI / 180.0))*(*itr)->length / 1.5);
-		double y_l2 = (*itr)->pointY + (sin((*itr)->angle*(M_PI / 180.0))*(*itr)->length / 1.5);
-		double len_l2 = (*itr)->length / 3;
-		double ang_l2 = (*itr)->angle;
 
-		double x_l3 = (*itr)->pointX + (cos((*itr)->angle*(M_PI / 180.0))*(*itr)->length / 3.0);
-		double y_l3 = (*itr)->pointY + (sin((*itr)->angle*(M_PI / 180.0))*(*itr)->length / 3.0);
-		double len_l3 = (*itr)->length / 3.0;
-		double ang_l3 = (*itr)->angle - 300.0;
+	#pragma omp barrier
+	#pragma omp for
+		for (int i = 0; i < size; i++) {
+			Line* line = NULL;
+	#pragma omp critical
+			{
+				line = lines.back();
+				lines.pop_back();
+			}
 
-		double x_l4 = (*itr)->pointX + (cos((*itr)->angle*(M_PI / 180.0))*((*itr)->length / 1.5));
-		double y_l4 = (*itr)->pointY + (sin((*itr)->angle*(M_PI / 180.0))*((*itr)->length / 1.5));
-		double len_l4 = (*itr)->length / 3.0;
-		double ang_l4 = (*itr)->angle - 240.0;
+			double x_l1 = line->pointX;
+			double y_l1 = line->pointY;
+			double len_l1 = line->length / 3;
+			double ang_l1 = line->angle;
 
-		x_l4 = x_l4 + cos(ang_l4*(M_PI / 180.0))*len_l4;
-		y_l4 = y_l4 + sin(ang_l4*(M_PI / 180.0))*len_l4;
-		ang_l4 -= 180.0;
+			double x_l2 = line->pointX + (cos((line)->angle*(M_PI / 180.0))*(line)->length / 1.5);
+			double y_l2 = line->pointY + (sin((line)->angle*(M_PI / 180.0))*(line)->length / 1.5);
+			double len_l2 = line->length / 3;
+			double ang_l2 = line->angle;
 
-		newLines.push_back(new Line(x_l1, y_l1, len_l1, ang_l1));
-		newLines.push_back(new Line(x_l2, y_l2, len_l2, ang_l2));
-		newLines.push_back(new Line(x_l3, y_l3, len_l3, ang_l3));
-		newLines.push_back(new Line(x_l4, y_l4, len_l4, ang_l4));
+			double x_l3 = line->pointX + (cos((line)->angle*(M_PI / 180.0))*(line)->length / 3.0);
+			double y_l3 = line->pointY + (sin((line)->angle*(M_PI / 180.0))*(line)->length / 3.0);
+			double len_l3 = line->length / 3.0;
+			double ang_l3 = line->angle - 300.0;
 
-		delLines.push_back((*itr));
-	}
+			double x_l4 = line->pointX + (cos((line)->angle*(M_PI / 180.0))*((line)->length / 1.5));
+			double y_l4 = line->pointY + (sin((line)->angle*(M_PI / 180.0))*((line)->length / 1.5));
+			double len_l4 = line->length / 3.0;
+			double ang_l4 = line->angle - 240.0;
 
-	for (auto itr = newLines.begin(); itr != newLines.end(); itr++)
-		lines.push_back((*itr));
+			x_l4 = x_l4 + cos(ang_l4*(M_PI / 180.0))*len_l4;
+			y_l4 = y_l4 + sin(ang_l4*(M_PI / 180.0))*len_l4;
+			ang_l4 -= 180.0;
 
-	for (auto itr = delLines.begin(); itr != delLines.end(); itr++)
-	{
-		lines.remove((*itr));
-		delete (*itr);
-	}
+			newLines.push_back(new Line(x_l1, y_l1, len_l1, ang_l1));
+			newLines.push_back(new Line(x_l2, y_l2, len_l2, ang_l2));
+			newLines.push_back(new Line(x_l3, y_l3, len_l3, ang_l3));
+			newLines.push_back(new Line(x_l4, y_l4, len_l4, ang_l4));
+
+			delete line;
+		}
+	#pragma omp barrier
+	#pragma omp for
+		for (int i = 0; i < newLines.size(); i++)
+		{
+			Line* line = newLines[i];
+			lines.push_back(line);
+
+		}
+
 }
 
 int main(int argc, char** args)
@@ -102,6 +113,8 @@ int main(int argc, char** args)
 	lineS->angle -= 180.0;
 	lines.push_back(lineS);
 	signed int countIteration = 0;
+	double start, end;
+	start = omp_get_wtime();
 
 	while (!quit)
 	{
@@ -114,8 +127,12 @@ int main(int argc, char** args)
 
 		SDL_RenderClear(renderer); 
 
-		for (auto itr = lines.begin(); itr != lines.end(); itr++)
-			(*itr)->draw();
+#pragma omp barrier
+#pragma omp for
+		for (int  i = 0; i < lines.size(); i++)
+		{
+			lines[i]->draw();
+		}
 
 		SDL_RenderPresent(renderer);
 
@@ -123,6 +140,10 @@ int main(int argc, char** args)
 		kochFractal(lines); 
 		countIteration++;
 		printf("Count iteration: %d \n", countIteration);
+		printf("Count state: %d \n", lines.size());
+		end = omp_get_wtime();
+		printf("Time duration %f seconds.\n", end - start);
+		printf("\n");
 	}
 
 	for (auto itr = lines.begin(); itr != lines.end(); itr++)
