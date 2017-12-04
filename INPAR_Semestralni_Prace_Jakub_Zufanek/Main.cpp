@@ -42,7 +42,6 @@ void kochFractal(std::list<Line*> & lines)
 	std::list<Line*> newLines;
 	std::list<Line*> delLines;
 
-	#pragma omp parallel for 
 	for (auto itr = lines.begin(); itr != lines.end(); itr++)
 	{
 		double x_l1 = (*itr)->pointX;
@@ -90,7 +89,7 @@ void kochFractal(std::list<Line*> & lines)
 int main(int argc, char** args)
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
-	window = SDL_CreateWindow("INPAR - Kochova vloèka", SDL_WINDOWPOS_UNDEFINED,
+	window = SDL_CreateWindow("INPAR - Kochova vlocka", SDL_WINDOWPOS_UNDEFINED,
 	SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -102,6 +101,7 @@ int main(int argc, char** args)
 	lineS->pointY += sin(lineS->angle *(M_PI / 180.0))*lineS->length;
 	lineS->angle -= 180.0;
 	lines.push_back(lineS);
+	signed int countIteration = 0;
 
 	while (!quit)
 	{
@@ -121,6 +121,8 @@ int main(int argc, char** args)
 
 		SDL_Delay(1000); 
 		kochFractal(lines); 
+		countIteration++;
+		printf("Count iteration: %d \n", countIteration);
 	}
 
 	for (auto itr = lines.begin(); itr != lines.end(); itr++)
