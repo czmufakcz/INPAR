@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <omp.h>
-#include "SDL.h"
+//#include "SDL.h"
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <list>
 #include <vector>
-
+/*
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
-
-bool quit = false;
 SDL_Event in;
+*/
+bool quit = false;
+
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
@@ -27,25 +30,28 @@ struct Line
 	{
 		return pointY + sin(angle*(M_PI / 180.0))*length;
 	}
-
+	/*
 	void draw()
 	{
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderDrawLine(renderer, pointX, pointY, getX2(), getY2());
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	}
+	}*/
 };
 
 
 
 int main(int argc, char** args)
-{
+{/*
 	SDL_Init(SDL_INIT_EVERYTHING);
 	window = SDL_CreateWindow("INPAR - Kochova vlocka", SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);*/
 	std::vector<Line*> lines;
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	std::vector<Line*> newLines;
+	//INIT LINES
 	lines.push_back(new Line(WINDOW_WIDTH - 200, 150, WINDOW_WIDTH - 400, 180.0));
 	lines.push_back(new Line(200, 150, WINDOW_WIDTH - 400, 60.0));
 	Line* lineS = new Line(WINDOW_WIDTH - 200, 150, WINDOW_WIDTH - 400, 120.0);
@@ -53,14 +59,21 @@ int main(int argc, char** args)
 	lineS->pointY += sin(lineS->angle *(M_PI / 180.0))*lineS->length;
 	lineS->angle -= 180.0;
 	lines.push_back(lineS);
+
 	signed int countIteration = 0;
 	double start, end;
 	start = omp_get_wtime();
+	Line* line = NULL;
+	double pointX = 0;
+	double pointY = 0;
+	double length = 0;
+	double angle = 0;
 
 	//
 	while (!quit)
 	{
-		
+
+		/*
 		while (SDL_PollEvent(&in))
 		{
 			if (in.type == SDL_QUIT)
@@ -76,15 +89,12 @@ int main(int argc, char** args)
 		}
 
 		SDL_RenderPresent(renderer);
-	
-		std::vector<Line*> newLines;
+	*/
+		newLines.clear();
+		newLines.reserve(lines.size());
 		//Variables for parallel running ....in omp need private for each instance
 		const int size = lines.size();
-		Line* line = NULL;
-		double pointX = 0;
-		double pointY = 0;
-		double length = 0;
-		double angle = 0;
+	
 
 //Issue with vector which is not thread safe....3 threads are better usage for longer run
 #pragma omp parallel num_threads(3) private(line, pointX, pointY, length, angle)
@@ -93,14 +103,13 @@ int main(int argc, char** args)
 			for (int i = 0; i < size; i++) {
 #pragma omp critical
 				{
-					line = lines.back();
-					lines.pop_back();
-					pointX = line->pointX;
-					pointY = line->pointY;
-					length = line->length;
-					angle = line->angle;
+					line = lines[i];
+					lines[i] = NULL;		
 				}
-
+				pointX = line->pointX;
+				pointY = line->pointY;
+				length = line->length;
+				angle = line->angle;
 				double x_l1 = pointX;
 				double y_l1 = pointY;
 				double len_l1 = length / 3;
@@ -126,6 +135,12 @@ int main(int argc, char** args)
 				ang_l4 -= 180.0;
 #pragma omp critical
 				{
+					/*
+					newLines[i] = new Line(x_l1, y_l1, len_l1, ang_l1);
+					newLines[i+1] = new Line(x_l2, y_l2, len_l2, ang_l2);
+					newLines[i+2] = new Line(x_l3, y_l3, len_l3, ang_l3);
+					newLines[i+3] = new Line(x_l4, y_l4, len_l4, ang_l4);
+					*/
 				newLines.push_back(new Line(x_l1, y_l1, len_l1, ang_l1));
 				newLines.push_back(new Line(x_l2, y_l2, len_l2, ang_l2));
 				newLines.push_back(new Line(x_l3, y_l3, len_l3, ang_l3));
@@ -148,9 +163,10 @@ int main(int argc, char** args)
 	for (auto itr = lines.begin(); itr != lines.end(); itr++)
 		delete (*itr);
 	//Quit SDL
+	/*
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-
+	*/
 	return 0;
 }
