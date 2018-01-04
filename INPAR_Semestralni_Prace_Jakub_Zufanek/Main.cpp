@@ -1,18 +1,23 @@
 #include <stdio.h>
 #include <omp.h>
-//#include "SDL.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <list>
 #include <vector>
 
-#define COUNT_THREADS 1
+//Uncomment if you want use SDL
+//#include "SDL.h"
+//#define USE_SDL
+
+#define COUNT_THREADS 3
 #define KOCH_CONSTANT 4
-/*
+
+#ifdef USE_SDL
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Event in;
-*/
+#endif
+
 bool quit = false;
 
 const int WINDOW_WIDTH = 800;
@@ -33,26 +38,28 @@ struct Line
 	{
 		return pointY + sin(angle*(M_PI / 180.0))*length;
 	}
-	/*
+#ifdef USE_SDL
 	void draw()
 	{
 		SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 		SDL_RenderDrawLine(renderer, pointX, pointY, getX2(), getY2());
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	}*/
+	}
+#endif
 };
 
 
 
 int main(int argc, char** args)
-{/*
+{
+#ifdef USE_SDL
 	SDL_Init(SDL_INIT_EVERYTHING);
 	window = SDL_CreateWindow("INPAR - Kochova vlocka", SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);*/
-
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+#endif
 	std::vector<Line*> lines;
 	std::vector<Line*> newLines;
 	//INIT LINES AND PUSH TO VECTOR
@@ -78,8 +85,7 @@ int main(int argc, char** args)
 
 	while (!quit)
 	{
-
-		/*
+#ifdef USE_SDL
 		while (SDL_PollEvent(&in))
 		{
 			if (in.type == SDL_QUIT)
@@ -95,7 +101,7 @@ int main(int argc, char** args)
 		}
 
 		SDL_RenderPresent(renderer);
-	*/
+#endif
 	
 		//SIZES FOR TIMES RUNNING
 		const int size = lines.size();
@@ -161,6 +167,9 @@ int main(int argc, char** args)
 
 		}
 		lines = newLines;
+#ifdef  USE_SDL
+		SDL_Delay(1000);
+#endif 
 
 		//INFORMATION IN CONSOLE
 		countIteration++;
@@ -175,10 +184,11 @@ int main(int argc, char** args)
 		delete line;
 	}
 	//Quit SDL
-	/*
+#ifdef USE_SDL
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
-	*/
+#endif 
+	
 	return 0;
 }
